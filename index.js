@@ -1,9 +1,6 @@
 import Player from "./Player.js";
 import Ground from "./Ground.js"; 
 import CactiController from "./CactiController.js";
-import Cactus from "./Cactus.js";
-
-// import Cactus from "./Cactus.js";
 
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
@@ -36,6 +33,7 @@ let cactiController = null;
 let scaleRatio = null;
 let previoustime = null;
 let gameSpeed = GAME_SPEED_START;
+let gameOver = false;
 
 function createSprites(){
     const playerWidthInGame = PLAYER_WIDTH * scaleRatio;
@@ -110,6 +108,21 @@ function getScaleRatio() {
         return screenHeight / GAME_HEIGHT;
     }
 }
+
+function showGameOver(){
+    const fontsize = 70 * scaleRatio;
+    ctx.font = `${fontsize}px Verdana`;
+    ctx.fillStyle = "Grey";
+    const x = canvas.width / 4.5;
+    const y = canvas.height / 2;
+    ctx.fillText("Game Over", x, y);
+
+}
+
+function updateGameSpeed(frameTimeDelta) {
+  gameSpeed += frameTimeDelta * GAME_SPEED_INCREMENT;
+}
+
 function clearScreen() {
     ctx.fillStyle = "white";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -125,17 +138,24 @@ function gameLoop(currentTime) {
     
     clearScreen();
 
-
-    // Update game objects
-    ground.update(gameSpeed, frameTimeDelta);
-    cactiController.update(gameSpeed, frameTimeDelta);
-    player.update(gameSpeed, frameTimeDelta);
-
-
+    if(!gameOver){
+        ground.update(gameSpeed, frameTimeDelta);
+        cactiController.update(gameSpeed, frameTimeDelta);
+        player.update(gameSpeed, frameTimeDelta);
+    }
+    if(!gameOver && cactiController.collideWith(player)) {
+        gameOver = true;   
+    }
+ 
     //Draw game objects
     ground.draw();
     cactiController.draw();
     player.draw();
+
+    if(gameOver){
+        showGameOver();
+    }
+
     requestAnimationFrame(gameLoop);
 
 }

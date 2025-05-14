@@ -17,16 +17,16 @@ export default class Cactus {
   }
 
   collideWith(sprite) {
-    const adjustBy = 1.4;
-    if (
+    const adjustBy = 1.0; // More sensitive collision
+    const collided = (
       sprite.x < this.x + this.width / adjustBy &&
       sprite.x + sprite.width / adjustBy > this.x &&
       sprite.y < this.y + this.height / adjustBy &&
-      sprite.height + sprite.y / adjustBy > this.y
-    ) {
-      return true;
-    } else {
-      return false;
+      sprite.y + sprite.height / adjustBy > this.y
+    );
+    if (collided) {
+      console.log("Collision detected with player at", sprite.x, sprite.y);
     }
+    return collided;
   }
 }

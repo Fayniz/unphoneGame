@@ -41,7 +41,7 @@ export default class CactiController {
       y,
       cactusImage.width,
       cactusImage.height,
-      cactusImage.image
+      cactusImage
     );
 
     this.cacti.push(cactus);
@@ -59,18 +59,17 @@ export default class CactiController {
     });
 
     this.cacti = this.cacti.filter((cactus) => cactus.x > -cactus.width);
-    
   }
 
   draw() {
     this.cacti.forEach((cactus) => cactus.draw());
   }
 
-  collideWith(sprite) {
-    return this.cacti.some(cactus=> cactus.collideWith(sprite));
+  collideWith(player) {
+    return this.cacti.some((cactus) => cactus.collideWith(player));
   }
 
-  reset() {
-    this.cacti = [];
+  collideWithAny(players) {
+    return players.some(player => this.collideWith(player));
   }
 }

@@ -3,17 +3,18 @@ import Ground from "./Ground.js";
 import CactiController from "./CactiController.js";
 import Score from "./Score.js";
 
-const canvas = document.getElementById("game");
-const ctx = canvas.getContext("2d");
+const canvas1 = document.getElementById("game1");
+const canvas2 = document.getElementById("game2");
+const ctx1 = canvas1.getContext("2d");
+const ctx2 = canvas2.getContext("2d");
 
 const GAME_SPEED_START = 1;
 const GAME_SPEED_INCREMENT = 0.00001;
 
-
 const GAME_WIDTH = 800;
 const GAME_HEIGHT = 200;
-const PLAYER_WIDTH = 88/ 1.5;
-const PLAYER_HEIGHT = 94 /1.5; 
+const PLAYER_WIDTH = 88 / 1.5;
+const PLAYER_HEIGHT = 94 / 1.5;
 const MAX_JUMP_HEIGHT = GAME_HEIGHT;
 const MIN_JUMP_HEIGHT = 150;
 const GROUND_WIDTH = 2400;
@@ -21,193 +22,169 @@ const GROUND_HEIGHT = 24;
 const GROUND_AND_CACTUS_SPEED = 0.5;
 
 const CACTI_CONFIG = [
-    { width: 48 /1.5, height: 100 / 1.5, image: "images/cactus_1.png" },
-    { width: 98 /1.5, height: 100 / 1.5, image: "images/cactus_2.png" },
-    { width: 68 /1.5, height: 100 / 1.5, image: "images/cactus_3.png" }
-]
+  { width: 48 / 1.5, height: 100 / 1.5, image: "images/cactus_1.png" },
+  { width: 98 / 1.5, height: 100 / 1.5, image: "images/cactus_2.png" },
+  { width: 68 / 1.5, height: 100 / 1.5, image: "images/cactus_3.png" }
+];
 
-//GameObjects
-let player = null;
-let ground = null;
-let cactiController = null;
-let score = null;
-//Game state
+let players = [], grounds = [], cactiControllers = [], scores = [];
 let scaleRatio = null;
-let previoustime = null;
+let previousTime = null;
 let gameSpeed = GAME_SPEED_START;
 let gameOver = false;
-let hasAddedEventListenerForRestart = false;
 let waitingToStart = true;
+let hasAddedEventListenerForRestart = false;
 
-function createSprites(){
-    const playerWidthInGame = PLAYER_WIDTH * scaleRatio;
-    const playerHeightInGame = PLAYER_HEIGHT * scaleRatio;
-    const minJumpHeightInGame = MIN_JUMP_HEIGHT * scaleRatio;
-    const maxJumpHeightInGame = MAX_JUMP_HEIGHT * scaleRatio;
+function createGame(canvas, ctx) {
+  const playerWidth = PLAYER_WIDTH * scaleRatio;
+  const playerHeight = PLAYER_HEIGHT * scaleRatio;
+  const minJump = MIN_JUMP_HEIGHT * scaleRatio;
+  const maxJump = MAX_JUMP_HEIGHT * scaleRatio;
 
-    const groundWidthInGame = GROUND_WIDTH * scaleRatio;
-    const groundHeightInGame = GROUND_HEIGHT * scaleRatio;
+  const groundWidth = GROUND_WIDTH * scaleRatio;
+  const groundHeight = GROUND_HEIGHT * scaleRatio;
 
+  const player = new Player(ctx, playerWidth, playerHeight, minJump, maxJump, scaleRatio);
+  const ground = new Ground(ctx, groundWidth, groundHeight, GROUND_AND_CACTUS_SPEED, scaleRatio);
+  const cactiImages = CACTI_CONFIG.map(cactus => {
+    const image = new Image();
+    image.src = cactus.image;
+    return {
+      image: image,
+      width: cactus.width * scaleRatio,
+      height: cactus.height * scaleRatio
+    };
+  });
+  const cactiController = new CactiController(ctx, cactiImages, scaleRatio, GROUND_AND_CACTUS_SPEED);
+  const score = new Score(ctx, scaleRatio);
 
-    player = new Player(
-        ctx,
-        playerWidthInGame, 
-        playerHeightInGame, 
-        minJumpHeightInGame, 
-        maxJumpHeightInGame, 
-        scaleRatio);
-    ground = new Ground(
-        ctx,
-        groundWidthInGame, 
-        groundHeightInGame, 
-        GROUND_AND_CACTUS_SPEED, 
-        scaleRatio
-    );
-    const cactiImages = CACTI_CONFIG.map(cactus => {
-        const image = new Image();
-        image.src = cactus.image;
-        return {
-            image:image,
-            width: cactus.width * scaleRatio,
-            height: cactus.height * scaleRatio
-        };
-    });
-    cactiController = new CactiController(
-        ctx,
-        cactiImages,
-        scaleRatio,
-        GROUND_AND_CACTUS_SPEED
-    );
+  canvas.width = GAME_WIDTH * scaleRatio;
+  canvas.height = GAME_HEIGHT * scaleRatio;
 
-    score = new Score(ctx, scaleRatio);
-}
-function setScreen(){
-    scaleRatio = getScaleRatio();
-    canvas.width = GAME_WIDTH * scaleRatio;
-    canvas.height = GAME_HEIGHT * scaleRatio;
-    createSprites();
+  return { player, ground, cactiController, score };
 }
 
-setScreen();
+function setScreen() {
+  scaleRatio = getScaleRatio();
+  players = [];
+  grounds = [];
+  cactiControllers = [];
+  scores = [];
 
-
-window.addEventListener("resize", () => setTimeout(setScreen, 500));
-
-if(screen.orientation){
-    screen.orientation.addEventListener("change", setScreen);
+  [
+    { canvas: canvas1, ctx: ctx1 },
+    { canvas: canvas2, ctx: ctx2 }
+  ].forEach(({ canvas, ctx }) => {
+    const { player, ground, cactiController, score } = createGame(canvas, ctx);
+    players.push(player);
+    grounds.push(ground);
+    cactiControllers.push(cactiController);
+    scores.push(score);
+  });
 }
 
 function getScaleRatio() {
-    const screenHeight = Math.min(
-        window.innerHeight,
-        document.documentElement.clientHeight
-    );
-
-    const screenWidth = Math.min(
-        window.innerWidth,
-        document.documentElement.clientWidth
-    );
-
-    if(screenWidth/ screenHeight< GAME_WIDTH / GAME_HEIGHT){
-        return screenWidth / GAME_WIDTH;
-    } else {
-        return screenHeight / GAME_HEIGHT;
-    }
+  const screenHeight = Math.min(window.innerHeight, document.documentElement.clientHeight);
+  const screenWidth = Math.min(window.innerWidth, document.documentElement.clientWidth);
+  return screenWidth / 2 / GAME_WIDTH;
 }
 
-function showGameOver(){
-    const fontsize = 70 * scaleRatio;
-    ctx.font = `${fontsize}px Verdana`;
-    ctx.fillStyle = "Grey";
-    const x = canvas.width / 4.5;
-    const y = canvas.height / 2;
-    ctx.fillText("Game Over", x, y);
+function showGameOver(ctx, canvas) {
+  const fontSize = 70 * scaleRatio;
+  ctx.font = `${fontSize}px Verdana`;
+  ctx.fillStyle = "Grey";
+  ctx.fillText("Game Over", canvas.width / 4.5, canvas.height / 2);
 }
 
-
-function setupGameReset(){
-    if(!hasAddedEventListenerForRestart){
-        hasAddedEventListenerForRestart = true;
-
-        setTimeout(() => {
-        window.addEventListener("keyup", reset, {once:true});
-        window.addEventListener("touchstart", reset, {once:true});
-        }, 1000);
-    }
+function setupGameReset() {
+  if (!hasAddedEventListenerForRestart) {
+    hasAddedEventListenerForRestart = true;
+    setTimeout(() => {
+      window.addEventListener("keyup", reset, { once: true });
+      window.addEventListener("touchstart", reset, { once: true });
+    }, 1000);
+  }
 }
 
-function reset(){
-    hasAddedEventListenerForRestart = false;
-    gameOver = false;
-    waitingToStart = false;
-    ground.reset();
-    cactiController.reset();
-    score.reset();
-    gameSpeed = GAME_SPEED_START;
+function reset() {
+  hasAddedEventListenerForRestart = false;
+  gameOver = false;
+  waitingToStart = false;
+  grounds.forEach(g => g.reset());
+  cactiControllers.forEach(c => c.reset());
+  scores.forEach(s => s.reset());
+  gameSpeed = GAME_SPEED_START;
 }
 
-function showStartGameText(){
-    const fontsize = 40 * scaleRatio;
-    ctx.font = `${fontsize}px Verdana`;
-    ctx.fillStyle = "Grey";
-    const x = canvas.width / 14;
-    const y = canvas.height / 2;
-    ctx.fillText("Tap Screen or Press Space To Start", x, y);
+function showStartGameText(ctx, canvas) {
+  const fontSize = 40 * scaleRatio;
+  ctx.font = `${fontSize}px Verdana`;
+  ctx.fillStyle = "Grey";
+  ctx.fillText("Tap or Press Space to Start", canvas.width / 14, canvas.height / 2);
 }
-
 
 function updateGameSpeed(frameTimeDelta) {
   gameSpeed += frameTimeDelta * GAME_SPEED_INCREMENT;
 }
 
-function clearScreen() {
-    ctx.fillStyle = "white";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+function clearScreen(ctx, canvas) {
+  ctx.fillStyle = "white";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
 }
+
 function gameLoop(currentTime) {
-    console.log(gameSpeed)
-    if(previoustime === null){
-        previoustime = currentTime;
-        requestAnimationFrame(gameLoop);
-        return;
-    }
-    const frameTimeDelta = currentTime - previoustime;
-    previoustime = currentTime;
-    
-    clearScreen();
-
-    if(!gameOver && !waitingToStart){
-        ground.update(gameSpeed, frameTimeDelta);
-        cactiController.update(gameSpeed, frameTimeDelta);
-        player.update(gameSpeed, frameTimeDelta);
-        score.update(frameTimeDelta);
-        updateGameSpeed(frameTimeDelta);
-    }
-    if(!gameOver && cactiController.collideWith(player)) {
-        gameOver = true;   
-        setupGameReset();
-        score.setHighScore();
-    }
- 
-    //Draw game objects
-    ground.draw();
-    cactiController.draw();
-    player.draw();
-    score.draw();
-
-    if(gameOver){
-        showGameOver();
-    }
-
-    if(waitingToStart){    
-        showStartGameText();
-    }
-
+  if (previousTime === null) {
+    previousTime = currentTime;
     requestAnimationFrame(gameLoop);
+    return;
+  }
+  const frameTimeDelta = currentTime - previousTime;
+  previousTime = currentTime;
 
+  for (let i = 0; i < players.length; i++) {
+    const ctx = [ctx1, ctx2][i];
+    const canvas = [canvas1, canvas2][i];
+    clearScreen(ctx, canvas);
+
+    if (!gameOver && !waitingToStart) {
+      grounds[i].update(gameSpeed, frameTimeDelta);
+      cactiControllers[i].update(gameSpeed, frameTimeDelta);
+      players[i].update(gameSpeed, frameTimeDelta);
+      scores[i].update(frameTimeDelta);
+      updateGameSpeed(frameTimeDelta);
+    }
+
+    if (!gameOver && cactiControllers[i].collideWith(players[i])) {
+      gameOver = true;
+      setupGameReset();
+      scores[i].setHighScore();
+    }
+
+    grounds[i].draw();
+    cactiControllers[i].draw();
+    players[i].draw();
+    scores[i].draw();
+
+    if (gameOver) showGameOver(ctx, canvas);
+    if (waitingToStart) showStartGameText(ctx, canvas);
+  }
+
+  requestAnimationFrame(gameLoop);
 }
+
+setScreen();
+window.addEventListener("resize", () => setTimeout(setScreen, 500));
+if (screen.orientation) screen.orientation.addEventListener("change", setScreen);
+window.addEventListener("keyup", reset, { once: true });
+window.addEventListener("touchstart", reset, { once: true });
+
+// Add custom key controls for each player
+window.addEventListener("keydown", (event) => {
+  if (event.code === "KeyZ") {
+    players[0].jumpPressed = true; // Player 1 uses Z
+  } else if (event.code === "KeyM") {
+    players[1].jumpPressed = true; // Player 2 uses M
+  }
+});
 
 requestAnimationFrame(gameLoop);
-
-window.addEventListener("keyup", reset, {once:true});
-window.addEventListener("touchstart", reset, {once:true});

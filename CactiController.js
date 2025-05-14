@@ -22,7 +22,6 @@ export default class CactiController {
       this.CACTUS_INTERVAL_MIN,
       this.CACTUS_INTERVAL_MAX
     );
-
     this.nextCactusInterval = num;
   }
 
@@ -34,7 +33,7 @@ export default class CactiController {
     const index = this.getRandomNumber(0, this.cactiImages.length - 1);
     const cactusImage = this.cactiImages[index];
     const x = this.canvas.width * 1.5;
-    const y = this.canvas.height - cactusImage.height;
+    const y = this.canvas.height - cactusImage.height - 1; // avoid clipping
     const cactus = new Cactus(
       this.ctx,
       x,
@@ -59,7 +58,6 @@ export default class CactiController {
     });
 
     this.cacti = this.cacti.filter((cactus) => cactus.x > -cactus.width);
-    
   }
 
   draw() {
@@ -67,10 +65,11 @@ export default class CactiController {
   }
 
   collideWith(sprite) {
-    return this.cacti.some(cactus=> cactus.collideWith(sprite));
+    return this.cacti.some(cactus => cactus.collideWith(sprite));
   }
 
   reset() {
     this.cacti = [];
+    this.setNextCactusTime(); // restart spawn timer on reset
   }
 }
